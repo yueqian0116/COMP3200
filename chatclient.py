@@ -14,7 +14,7 @@ hostname = "localhost"
 # check addrinfo
 
 
-#sock.connect(serverAddr[0][4])
+# sock.connect(serverAddr[0][4])
 try:
     sock = socket(AF_INET, SOCK_STREAM)
     serverAddr = getaddrinfo(hostname, port, 
@@ -26,6 +26,9 @@ try:
 except Exception: # unable to create a socket and connect to server
     unable_to_connect_port(port)
 
+
+# If your client detects that the connection to the server has been closed then it should print the following 246
+#  message (terminated by a newline) to stderr:
 for line in stdin:
       sock.send(line.encode())
       data = sock.recv(BUFSIZE)

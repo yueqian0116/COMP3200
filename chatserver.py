@@ -2,6 +2,7 @@ from socket import *
 from threading import Lock, Thread, current_thread
 from time import sleep
 from sys import argv,exit
+from server_support import *
 
 # Shared resource (counter to count the number of data packets received)
 counter = 0
@@ -58,7 +59,13 @@ def process_connections(listening_socket):
                 args=(client_socket, client_address))
         client_thread.start()
 
+        
+
 # Run the server
 if __name__ == "__main__":
-    socket = start_server(int(argv[1]))
-    process_connections(socket)
+    print("hello")
+    check_arguments(argv)
+    # socket = start_server(int(argv[1]))
+    # process_connections(socket)
+
+    

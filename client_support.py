@@ -8,7 +8,8 @@ import sys
 EXIT_STATUS = {
     "USAGE": 3,
     "PORT": 7,
-    "USERNAME": 2
+    "USERNAME": 2,
+    "CONNECTION_CLOSED": 8
 }
 
 def usage_error():
@@ -26,6 +27,12 @@ def username_error(channel_name, client_username):
 def channel_full(number_of_users):
     print(f"[Server Message] You are in the waiting queue and there are {number_of_users} user(s) ahead of you.")
 
+def channel_has_user(username, member_list: list) -> bool:
+    return username in member_list
+    
+def connection_closed():
+    print(f"Error: server connection closed.", file=sys.stderr)
+    sys.exit(EXIT_STATUS["CONNECTION_CLOSED"])
 
 def check_arguments(argv) -> None:
     if len(argv) != 3:
@@ -40,6 +47,7 @@ def check_arguments(argv) -> None:
 
     # have to keep track of usernames in a channel, usernames must be unique in the channel
     # client username checking
+
     # if channel_has_user(username):
     #     username_error(channel, username)
 
