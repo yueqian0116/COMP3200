@@ -63,7 +63,6 @@ def process_connections(listening_socket):
 
 # Run the server
 if __name__ == "__main__":
-    print("hello")
     check_arguments(argv)
     # socket = start_server(int(argv[1]))
     # process_connections(socket)

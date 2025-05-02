@@ -1,2 +1,3 @@
 channel channel_1 6938 3
-channel abc 1033 100
+channel abc 1033 1
+channel peppa 1199 1
