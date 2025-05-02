@@ -63,7 +63,9 @@ def process_connections(listening_socket):
 
 # Run the server
 if __name__ == "__main__":
-    check_arguments(argv)
+    afk_time, channels = check_arguments(argv)
+    # print("afk_time: ", afk_time)
+    # print("channels: ", channels)
     # socket = start_server(int(argv[1]))
     # process_connections(socket)
 

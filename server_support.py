@@ -16,24 +16,16 @@ def usage_error():
 def unable_to_listen_port(port_number):
     print(f"Error: unable to listen on port {port_number}.", file=sys.stderr)
     sys.exit(EXIT_STATUS["PORT"])
-
-def check_port_range(port):
-    if not port.isdigit():
-        invalid_config_file()
-    port = int(port) # port is a int
-    if port < 1024 or port > 65535:
-        invalid_config_file()
     
-def invalid_config_file():
-    print(f"Error: Invalid configuration file.", file=sys.stderr)
+def invalid_config_file(error: str = "Unknown"):
+    print(f"Error: Invalid configuration file - {error}", file=sys.stderr)
     sys.exit(EXIT_STATUS["INVALID_CONFIG_FILE"])
 
-def check_capacity_range(capacity):
-    if not capacity.isdigit():
-        invalid_config_file()
-    capacity = int(capacity) # port is a int
-    if capacity < 1 or capacity > 8:
-        invalid_config_file()
+def check_duplicate_port(port: int, channels: dict) -> bool:
+    for channel in channels.values():
+        if (channel['port'] == port):
+            return True
+    return False
 
 def check_config_file(config_file):
     channels = {}
@@ -42,34 +34,48 @@ def check_config_file(config_file):
             for line in file:
                 format = line.split()
                 if len(format) != 4:
-                    invalid_config_file()
-                elif format[0] != "channel":
-                    print(format[1])
-                    invalid_config_file()
+                    invalid_config_file("Invalid line length")
 
-                # lets say we have all the arguments
-                channel_name = format[1]
-                channel_port = format[2]
-                channel_capacity = format[3]
+                if format[0] != "channel":
+                    invalid_config_file("Malformed line, missing 'channel'")
 
-                # check for duplicate names
-                if channel_name in channels:
-                    invalid_config_file()
-                else:    
-                    channels[channel_name] = {}
+                # Retrieve line values
+                name = format[1]
+                port_str = format[2]
+                capacity_str = format[3]
 
-                # validity of port
-                check_port_range(channel_port)
-                channel_port = int(channel_port) # valid port number
-                channels[channel_name]["port"] = channel_port
+                # Validate channel name
+                if name in channels:
+                    invalid_config_file("Duplicate channel name")
 
-                # validity of capacity
-                check_capacity_range(channel_capacity)
-                channel_capacity = int(channel_capacity) # valid capacity
-                channels[channel_name]["capacity"] = channel_capacity
+                # Validate channel port
+                if not port_str.isdigit():
+                    invalid_config_file("Port is not a number")
+                port = int(port_str)
+                if port < 1024 or port > 65535:
+                    invalid_config_file("Port not in range")
+                if check_duplicate_port(port, channels):
+                    invalid_config_file("Duplicate port value")
+
+                # Validate channel capacity
+                if not capacity_str.isdigit():
+                    invalid_config_file("Capacity is not a number")
+                capacity = int(capacity_str)
+                if capacity < 1 or capacity > 8:
+                    invalid_config_file("Capacity not in range")
+                
+                # Channel validated - add to channels
+                channel = {
+                    "name": name,
+                    "port": port,
+                    "capacity": capacity
+                }
+                channels[name] = channel
+
 
             
-    except Exception:
+    except Exception as e:
+        print(e)
         invalid_config_file()
     
     return channels
@@ -110,7 +116,8 @@ def check_arguments(argv):
         config_file = argv[1]
     
     channels = check_config_file(config_file)
-    print(channels)
+    # print(channels)
+    return afk_time, channels
     
 
    
