@@ -81,15 +81,15 @@ def check_config_file(config_file):
     return channels
 
 
-def testing():
-    channel = {
-        "channel1": "userA",
-        "channel2": "userB",
-        "channel3": "abc",  # Duplicate value (userA)
-    }
+# def testing():
+#     channel = {
+#         "channel1": "userA",
+#         "channel2": "userB",
+#         "channel3": "abc",  # Duplicate value (userA)
+#     }
 
-    values = list(channel.values())
-    print(values)
+#     values = list(channel.values())
+#     print(values)
 
 
 def check_arguments(argv):

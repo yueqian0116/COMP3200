@@ -1,21 +1,6 @@
 TODO:
 
 Chatserver:
-0.1. Check invalid command line args
--left with check config file, then can start parsing config file
-DONE
-1. parse config file
-DONE
-2. add channels and channel info to a dictionary
-    eg: channels{
-        channel1 : [port_number, capacity]
-    }
-    1. channel name - must be unique and contains only letters, numbers and underscores
-    2. channel port - 1024 <= x <= 65535
-    3. channel capacity - 1 <= x <= 8
-DONE
-3. we still have afk time (1 <= x <= 1000) , default 100s - but we will deal with that later 
-DONE
-
-
-4. 
+1. Implement Queue system in process connections
+2. Implement AFK check for each client
+3. Implement kick user

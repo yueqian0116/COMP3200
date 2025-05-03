@@ -1,0 +1,78 @@
+−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−
+Saturday 3 May 2025 10:32pm − interaction wtih ChatGPT
+−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−
+user
+def start\_server(port):
+listening\_socket = socket(AF\_INET, SOCK\_STREAM)
+listening\_socket.setsockopt(SOL\_SOCKET, SO\_REUSEADDR, 1)
+try:
+listening\_socket.bind(('', port))
+except Exception:
+exit(1)
+listening\_socket.listen(5)
+
+```
+print(f"Server listening on port {port}")
+return listening_socket
+```
+
+I have this function, but i think it only listens to one port at a time. How should I make it listen to multiple ports at a time?
+--------------------------------------------------------------------------------------------------------------------------
+ChatGPT:
+You're right — the start_server(port) function only creates one listening socket for one port, and it returns that socket. So if you just call it once, your server will only listen to one port.
+
+To make your program listen to multiple ports at the same time, you need to:
+
+Call start_server(port) for each port.
+
+For each returned socket, start a new thread (or async task) to handle connections on that port.
+
+Here's how to modify your code to support multiple ports:
+python
+Copy
+Edit
+import socket
+from threading import Thread
+
+def start_server(port):
+    listening_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    listening_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    try:
+        listening_socket.bind(('', port))
+    except Exception as e:
+        print(f"Failed to bind on port {port}: {e}")
+        return None
+    listening_socket.listen(5)
+    print(f"Server listening on port {port}")
+    return listening_socket
+
+def handle_client(client_socket, client_address):
+    print(f"Client {client_address} connected.")
+    client_socket.sendall(b"Hello from server!\n")
+    client_socket.close()
+
+def process_connections(listening_socket, port):
+    while True:
+        client_socket, client_address = listening_socket.accept()
+        print(f"Accepted connection on port {port} from {client_address}")
+        Thread(target=handle_client, args=(client_socket, client_address)).start()
+
+def listen_on_ports(ports):
+    for port in ports:
+        server_socket = start_server(port)
+        if server_socket:
+            Thread(target=process_connections, args=(server_socket, port), daemon=True).start()
+
+    print("Server is running. Listening on all specified ports.")
+    while True:
+        pass  # Keep main thread alive
+
+# Example usage
+listen_on_ports([8000, 8001, 8002])
+Key Changes:
+listen_on_ports([8000, 8001, 8002]) starts a listener for each port.
+
+start_server(port) is reused.
+
+Each listener gets its own thread via process_connections().
+--------------------------------------------------------------------------------------------------------------------------
