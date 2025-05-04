@@ -68,7 +68,10 @@ def check_config_file(config_file):
                 channel = {
                     "name": name,
                     "port": port,
-                    "capacity": capacity
+                    "capacity": capacity,
+                    "users": [],    # initialise user and queue
+                    "queue": [],
+                    "sockets": {} # dict: user: socket
                 }
                 channels[name] = channel
 
@@ -108,16 +111,20 @@ def check_arguments(argv):
         if afk_time < 1 or afk_time > 1000:
             usage_error()
         config_file = argv[2]
-
+        
     # assign config file if there are only 2 args
     if len(argv) == 2:
-        if argv[1].isdigit():
-            usage_error()
         config_file = argv[1]
     
+    if not config_file or ' ' in config_file:
+        usage_error()
+
     channels = check_config_file(config_file)
     # print(channels)
     return afk_time, channels
+
+def capacity_reached(channels: dict, name: str) -> bool:
+    return len(channels[name]["users"]) >= channels[name]["capacity"] 
     
 
    

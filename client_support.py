@@ -13,7 +13,7 @@ EXIT_STATUS = {
 }
 
 def usage_error():
-    print(" Usage: chatclient port_number client_username", file=sys.stderr)
+    print("Usage: chatclient port_number client_username", file=sys.stderr)
     sys.exit(EXIT_STATUS["USAGE"])
 
 def unable_to_connect_port(port_number):
@@ -40,6 +40,9 @@ def check_arguments(argv) -> None:
 
     port = argv[1]
     username = argv[2]
+
+    if not port or not username or ' ' in username:
+        usage_error()
 
     # client port checking
     if not port.isdigit():

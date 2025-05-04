@@ -76,3 +76,189 @@ start_server(port) is reused.
 
 Each listener gets its own thread via process_connections().
 --------------------------------------------------------------------------------------------------------------------------
+
+−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−
+Sunday 4 May 2025 5:20pm − interaction wtih ChatGPT
+−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−−
+User:
+While the chatserver supports concurrent communication between multiple clients across multiple channels 
+(i.e. broadcasts non-command messages from one client to all other clients (if any) in the same channel), it can also accept commands from its stdin.
+The format of the commands is the same as for the chatclient – they will start with a / and be terminated by a single newline.
+No leading or trailing spaces are to be accepted but arguments may be separated by multiple spaces.
+chatserver detects commands by the keyword after the /. If the keyword after the / is not one of the valid
+commands (including a following space), chatserver should ignore this invalid command. If the keyword after
+the / is one of the valid commands (including the following space) but the command has an invalid number of
+arguments, then chatserver should print a usage message (terminated by a newline) to chatserver’s stdout
+to show the correct usage of this command.
+
+Where should I place this in my code?
+
+def handle_client(client_socket, client_address, channels, name):
+    global counter
+    host,_ = getnameinfo(client_address, 0)
+    with client_socket:
+        # getting username from client, CHATGPT
+        username = client_socket.recv(BUFSIZE).decode().strip()
+        if not capacity_reached(channels, name):
+            channels[name]["users"].append(username)
+            message = f"[Server Message] You have joined the channel \"{name}\".\n"
+        else:
+            channels[name]["queue"].append(username) 
+            users_in_front = len(channels[name]["queue"]) - 1 
+            message = f"[Server Message] You are in the waiting queue and there are {users_in_front} user(s) ahead of you.\n"
+            
+            
+        print(channels[name])           
+        print(f"[Server Message] {username} has joined the channel \"{name}\"")
+        # Send a message to the client
+        # message = f"Welcome to the chatclient, {host}.\n"
+        client_socket.sendall(message.encode())
+
+        while data := client_socket.recv(BUFSIZE):
+            # Locking the shared resource (counter)
+            with counter_lock:
+                # print(f"Thread {current_thread().name} got the lock.")
+                counter += 1
+                # print(f"Counter value updated to: {counter}")
+                # Simulate doing some work
+                # sleep(2)
+                data = data.decode().upper() 
+                client_socket.sendall(data.encode())
+        # error or EOF - client disconnected
+        print("Client disconnected") # I ADDED THIS FOR CLARITY
+
+    # remove client from user list, add queued user to user list
+    channels[name]["users"].remove(username)
+    print(f"[Server Message] {username} has left the channel.")
+
+--------------------------------------------------------------------------------------------------------------------------
+ChatGPT:
+
+To support stdin command input in your chatserver, you should not place it inside the handle_client function. That function is for handling a single client, while stdin commands affect the whole server.
+
+Instead, you should:
+
+Create a separate thread to listen for stdin commands from the server admin
+Place this in your main function, or wherever you launch the server and spawn client handler threads.
+
+Here's how you can do it:
+1. Define a stdin command handler
+python
+Copy
+Edit
+def handle_stdin(channels):
+    while True:
+        try:
+            line = stdin.readline()
+            if not line:
+                continue
+            line = line.strip()
+            if not line.startswith('/'):
+                continue
+
+            tokens = line.split()
+            if not tokens:
+                continue
+
+            cmd = tokens[0]
+            args = tokens[1:]
+
+            # Example: /list channel
+            if cmd == "/list":
+                if len(args) != 1:
+                    print("[Usage] /list channel")
+                elif args[0] not in channels:
+                    print(f"[Server Message] Channel \"{args[0]}\" does not exist.")
+                else:
+                    users = channels[args[0]]["users"]
+                    print(f"[Server Message] Users in \"{args[0]}\": {', '.join(users)}")
+
+            # Add more commands here
+            else:
+                # Invalid command keyword
+                pass
+
+        except Exception as e:
+            print(f"[Error] Failed to handle stdin command: {e}")
+
+2. Start this in a thread when setting up the server:
+python
+Copy
+Edit
+stdin_thread = threading.Thread(target=handle_stdin, args=(channels,), daemon=True)
+stdin_thread.start()
+
+Summary
+Place handle_stdin(channels) in a new thread from your main setup.
+
+Keep handle_client(...) focused on handling client-specific sockets.
+
+This separation ensures that server-admin commands and client messages don’t interfere with each other.
+
+Would you like help implementing more specific server commands (e.g., /kick, /mute, /unmute, /list, etc.)?
+--------------------------------------------------------------------------------------------------------------------------
+User:
+
+/kick abc banana
+<socket.socket fd=1204, family=2, type=1, proto=0, laddr=('127.0.0.1', 1043), raddr=('127.0.0.1', 64091)>
+Exception in thread Thread-5 (handle_client):
+Traceback (most recent call last):
+  File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0\Lib\threading.py", line 1045, in _bootstrap_inner
+    self.run()
+  File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0\Lib\threading.py", line 982, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\firei\OneDrive\Desktop\COMP3200\chatserver.py", line 40, in handle_client
+    while data := client_socket.recv(BUFSIZE):
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ConnectionAbortedError: [WinError 10053] An established connection was aborted by the software in your host machine
+--------------------------------------------------------------------------------------------------------------------------
+ChatGPT:
+
+The error:
+
+vbnet
+Copy
+Edit
+ConnectionAbortedError: [WinError 10053] An established connection was aborted by the software in your host machine
+is expected when you forcefully close a socket (with .close()) from another thread while the socket is still being used in a recv() loop — as is happening in your handle_client() function.
+
+Why this happens:
+Your /kick command:
+
+python
+Copy
+Edit
+client_socket.sendall(b"[Server Message] You are removed from the channel.\n")
+client_socket.close()
+closes the socket immediately, but at that exact moment, the handle_client() thread is still inside:
+
+python
+Copy
+Edit
+while data := client_socket.recv(BUFSIZE):
+So recv() crashes with ConnectionAbortedError because the socket was shut down from outside.
+
+Best Practice: Graceful Socket Shutdown
+Instead of calling .close() directly, use .shutdown() first — this disables further send/receive operations cleanly:
+
+python
+Copy
+Edit
+client_socket.sendall(b"[Server Message] You are removed from the channel.\n")
+client_socket.shutdown(SHUT_RDWR)
+client_socket.close()
+This will still raise an exception in recv() but it will be cleaner and more expected. To prevent that from spamming your logs, you can handle it in handle_client() like this:
+
+python
+Copy
+Edit
+try:
+    while data := client_socket.recv(BUFSIZE):
+        with counter_lock:
+            counter += 1
+            data = data.decode().upper()
+            client_socket.sendall(data.encode())
+except (ConnectionResetError, ConnectionAbortedError):
+    print(f"Connection closed for {username}")
+Would you like to auto-replace a kicked user with the next one in the queue too?
+--------------------------------------------------------------------------------------------------------------------------
