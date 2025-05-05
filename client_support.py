@@ -17,7 +17,7 @@ def usage_error():
     sys.exit(EXIT_STATUS["USAGE"])
 
 def unable_to_connect_port(port_number):
-    print(f"Error: Unable to connect to port {port_number}", file=sys.stderr)
+    print(f"Error: Unable to connect to port {port_number}.", file=sys.stderr)
     sys.exit(EXIT_STATUS["PORT"])
     
 def username_error(channel_name, client_username):

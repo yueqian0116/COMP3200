@@ -17,8 +17,8 @@ def unable_to_listen_port(port_number):
     print(f"Error: unable to listen on port {port_number}.", file=sys.stderr)
     sys.exit(EXIT_STATUS["PORT"])
     
-def invalid_config_file(error: str = "Unknown"):
-    print(f"Error: Invalid configuration file - {error}", file=sys.stderr)
+def invalid_config_file():
+    print(f"Error: Invalid configuration file.", file=sys.stderr)
     sys.exit(EXIT_STATUS["INVALID_CONFIG_FILE"])
 
 def check_duplicate_port(port: int, channels: dict) -> bool:
@@ -31,13 +31,17 @@ def check_config_file(config_file):
     channels = {}
     try:
         with open(config_file, "r") as file:
-            for line in file:
+            lines = file.readlines()
+
+            if not lines:
+                invalid_config_file()
+            for line in lines:
                 format = line.split()
                 if len(format) != 4:
-                    invalid_config_file("Invalid line length")
+                    invalid_config_file()
 
                 if format[0] != "channel":
-                    invalid_config_file("Malformed line, missing 'channel'")
+                    invalid_config_file()
 
                 # Retrieve line values
                 name = format[1]
@@ -45,24 +49,24 @@ def check_config_file(config_file):
                 capacity_str = format[3]
 
                 # Validate channel name
-                if name in channels:
-                    invalid_config_file("Duplicate channel name")
+                if name in channels or (not all(c.isalnum() or c == '_' for c in name)):
+                    invalid_config_file()
 
                 # Validate channel port
                 if not port_str.isdigit():
-                    invalid_config_file("Port is not a number")
+                    invalid_config_file()
                 port = int(port_str)
                 if port < 1024 or port > 65535:
-                    invalid_config_file("Port not in range")
+                    invalid_config_file()
                 if check_duplicate_port(port, channels):
-                    invalid_config_file("Duplicate port value")
+                    invalid_config_file()
 
                 # Validate channel capacity
                 if not capacity_str.isdigit():
-                    invalid_config_file("Capacity is not a number")
+                    invalid_config_file()
                 capacity = int(capacity_str)
                 if capacity < 1 or capacity > 8:
-                    invalid_config_file("Capacity not in range")
+                    invalid_config_file()
                 
                 # Channel validated - add to channels
                 channel = {
@@ -73,12 +77,8 @@ def check_config_file(config_file):
                     "queue": [],
                     "sockets": {} # dict: user: socket
                 }
-                channels[name] = channel
-
-
-            
+                channels[name] = channel         
     except Exception as e:
-        print(e)
         invalid_config_file()
     
     return channels
@@ -125,9 +125,5 @@ def check_arguments(argv):
 
 def capacity_reached(channels: dict, name: str) -> bool:
     return len(channels[name]["users"]) >= channels[name]["capacity"] 
-    
 
-   
-
-    
 
