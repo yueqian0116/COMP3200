@@ -18,7 +18,6 @@ def handle_client(client_socket, client_address, channels, name):
     global counter
     host,_ = getnameinfo(client_address, 0)
     with client_socket:
-        # getting username from client, CHATGPT
         username = client_socket.recv(BUFSIZE).decode()
         
         if username in channels[name]["users"] or \
@@ -27,8 +26,7 @@ def handle_client(client_socket, client_address, channels, name):
             f"has user {username}."
             client_socket.sendall(msg.encode())
             return
-            
-        
+
         if not capacity_reached(channels, name):
             channels[name]["users"].append(username)
             channels[name]["sockets"][username] = client_socket
@@ -40,8 +38,6 @@ def handle_client(client_socket, client_address, channels, name):
                         f"and there are {users_in_front} user(s) ahead of you.\n"
         print(f"[Server Message] {username} has joined the channel \"{name}\".")
         sys.stdout.flush()
-        # Send a message to the client
-        # message = f"Welcome to the chatclient, {host}.\n"
         client_socket.sendall(message.encode())
 
         try:
@@ -55,7 +51,6 @@ def handle_client(client_socket, client_address, channels, name):
                     # sleep(2)
                     message = data.decode()
                     process_message(message, client_socket, channels, username, name)
-                    # client_socket.sendall(data.encode())
         except(ConnectionResetError, ConnectionAbortedError, OSError):
             pass
 
@@ -205,7 +200,5 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("Server shutting down. BYEEE")
         sys.stdout.flush()
-
-
 
 

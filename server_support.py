@@ -1,6 +1,7 @@
 from socket import *
 from sys import stdout,stdin,argv,exit
 import sys
+import os
 
 #  basically an enum for exit status
 EXIT_STATUS = {
@@ -128,15 +129,56 @@ def capacity_reached(channels: dict, name: str) -> bool:
 
 def process_message(message: str, client_socket, channels: dict,
         username: str, name:str):
-    if message.startswith('/'):
-        # parse commands
-        print("This is a command")
+    token = message.split()
+    if message.startswith('/send'):
+        send_failed = False
+        if len(token) != 3:
+            reply = "[Server Message] Usage: /send target_client_username file_path\n"
+            client_socket.sendall(reply.encode())
+        else:
+            to_user = token[1]
+            filepath = token[2]
+            if to_user == username:
+                reply = "[Server Message] Cannot send file to yourself.\n"
+                client_socket.sendall(reply.encode())
+                send_failed = True
+            if to_user not in channels[name]["users"]:
+                reply = f"[Server Message] {to_user} is not in the channel.\n"
+                client_socket.sendall(reply.encode())
+                send_failed = True
+            if not os.path.exists(filepath) or not os.access(filepath, os.R_OK):
+                reply = f"[Server Message] \"{filepath}\" does not exist.\n"
+                client_socket.sendall(reply.encode())
+                send_failed = True
+            # passes all checks for /send
+            if not send_failed:
+                try:
+                    filename = os.path.basename(filepath)
+                    filesize = os.path.getsize(filepath)
+                    receiver_sock = channels[name]["sockets"][to_user]
+
+                    header = f"FILE {filename} {filesize}\n"
+                    receiver_sock.sendall(header.encode())
+                    
+                    with open(filepath, 'rb') as f:
+                        while chunk := f.read(4096):
+                            receiver_sock.sendall(chunk)
+
+                    rcved_msg = f"[Server Message] {username} sent \"{filepath}\" to {to_user}.\n"
+                    succesful_msg = f"[Server Message] Sent \"{filepath}\" to {to_user}.\n"
+                    print(rcved_msg)
+                    sys.stdout.flush()
+                    client_socket.sendall(succesful_msg.encode())
+                    receiver_sock.sendall(rcved_msg.encode())
+                except Exception:
+                    msg = f"[Server Message] Failed to send \"{filepath}\" to {to_user}\n"
+                    client_socket.sendall(msg.encode())
+    else:    
+        broadcast_msg = f"[{username}] {message}"
+        print(broadcast_msg, end='')
         sys.stdout.flush()
-    
-    broadcast_msg = f"[{username}] {message}"
-    print(broadcast_msg, end='')
-    sys.stdout.flush()
-    for user in channels[name]["users"]:
-        sock = channels[name]["sockets"][user]
-        sock.sendall(broadcast_msg.encode())
+        for user in channels[name]["users"]:
+            sock = channels[name]["sockets"][user]
+            sock.sendall(broadcast_msg.encode())
+
 

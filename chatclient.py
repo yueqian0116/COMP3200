@@ -18,6 +18,20 @@ def receive_server_message(sock):
             data = sock.recv(BUFSIZE)
             if not data:
                 raise ConnectionResetError
+            msg = data.decode()
+            if msg.startswith("FILE"):
+                _, filename, filesize = msg.split()
+                filesize = int(filesize)
+
+                with open(filename, 'wb') as f:
+                    bytes_read = 0
+                    while bytes_read < filesize:
+                        chunk = sock.recv(min(4096, filesize - bytes_read))
+                        if not chunk:
+                            break
+                        f.write(chunk)
+                        bytes_read += len(chunk)
+                break
             stdout.buffer.write(data)
             stdout.flush()
     except (ConnectionResetError, OSError, BrokenPipeError) as e:
@@ -82,5 +96,6 @@ except KeyboardInterrupt:
 
 
 # sock.close()
+
 
 

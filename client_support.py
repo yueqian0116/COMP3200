@@ -48,15 +48,12 @@ def check_arguments(argv) -> None:
     if not port.isdigit():
         unable_to_connect_port(port)
 
-    # have to keep track of usernames in a channel, usernames must be unique in the channel
-    # client username checking
-
-    # if channel_has_user(username):
-    #     username_error(channel, username)
+# def process_commands(msg):
+#     token = msg.split()
+#     if msg.startswith("/send"):
+#         if len(token) != 3:
+#             print("[Server Message] Usage: /send target_client_username file_path ")
 
 
 
     
-
-
-
