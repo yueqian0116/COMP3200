@@ -20,21 +20,24 @@ def handle_client(client_socket, client_address, channels, name):
     with client_socket:
         # getting username from client, CHATGPT
         username = client_socket.recv(BUFSIZE).decode()
-        """
-        if username in channels[name]["users"] or 
+        
+        if username in channels[name]["users"] or \
         username in channels[name]["queue"]:
-            duplicate_name(name, username)
-        """
+            msg = f"[Server Message] Channel \"{name}\" already "\
+            f"has user {username}."
+            client_socket.sendall(msg.encode())
+            return
+            
+        
         if not capacity_reached(channels, name):
             channels[name]["users"].append(username)
             channels[name]["sockets"][username] = client_socket
-
             message = f"[Server Message] You have joined the channel \"{name}\".\n"
         else:
             channels[name]["queue"].append(username) 
             users_in_front = len(channels[name]["queue"]) - 1 
             message = f"[Server Message] You are in the waiting queue "\
-                        "and there are {users_in_front} user(s) ahead of you.\n"
+                        f"and there are {users_in_front} user(s) ahead of you.\n"
         print(f"[Server Message] {username} has joined the channel \"{name}\".")
         sys.stdout.flush()
         # Send a message to the client
@@ -202,6 +205,7 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("Server shutting down. BYEEE")
         sys.stdout.flush()
+
 
 
 

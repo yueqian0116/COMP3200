@@ -13,14 +13,31 @@ hostname = "localhost"
 
 def receive_server_message(sock):
     try:
+        # Continue receiving further messages
         while True:
             data = sock.recv(BUFSIZE)
             if not data:
-                raise ConnectionResetError  # Treat EOF as disconnection
+                raise ConnectionResetError
             stdout.buffer.write(data)
             stdout.flush()
     except (ConnectionResetError, OSError, BrokenPipeError) as e:
         pass
+
+def receive_initial_message(sock):
+    data = sock.recv(BUFSIZE)
+    if not data:
+        raise ConnectionResetError
+    # Check if the server rejected the username
+    if "already has user" in data.decode():
+        stdout.buffer.write(data)
+        stdout.flush()
+        exit(EXIT_STATUS["USERNAME"])  # Exit with status 2
+    else:
+        print(f"Welcome to chatclient, {username}.")
+        stdout.flush()
+        stdout.buffer.write(data)
+        stdout.flush()
+
 
 
 def send_server_message(sock):
@@ -47,9 +64,11 @@ except Exception: # unable to create a socket and connect to server
 #  message (terminated by a newline) to stderr:
 try:
     sock.send(username.encode())
-    print(f"Welcome to chatclient, {username}.", flush=True)
 except Exception as e:
     print(e)
+
+receive_initial_message(sock)
+
 recv_thread = Thread(target=receive_server_message, args=(sock,), daemon=True)
 send_thread = Thread(target=send_server_message, args=(sock,), daemon=True)
 
@@ -63,4 +82,5 @@ except KeyboardInterrupt:
 
 
 # sock.close()
+
 
