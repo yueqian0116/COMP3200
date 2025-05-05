@@ -19,7 +19,7 @@ def handle_client(client_socket, client_address, channels, name):
     host,_ = getnameinfo(client_address, 0)
     with client_socket:
         # getting username from client, CHATGPT
-        username = client_socket.recv(BUFSIZE).decode().strip()
+        username = client_socket.recv(BUFSIZE).decode()
         if not capacity_reached(channels, name):
             channels[name]["users"].append(username)
             channels[name]["sockets"][username] = client_socket
@@ -29,9 +29,7 @@ def handle_client(client_socket, client_address, channels, name):
             channels[name]["queue"].append(username) 
             users_in_front = len(channels[name]["queue"]) - 1 
             message = f"[Server Message] You are in the waiting queue and there are {users_in_front} user(s) ahead of you.\n"
-            
-            
-        print(channels[name])           
+                      
         print(f"[Server Message] {username} has joined the channel \"{name}\"")
         # Send a message to the client
         # message = f"Welcome to the chatclient, {host}.\n"
@@ -65,28 +63,17 @@ def handle_client(client_socket, client_address, channels, name):
 
 def start_server(port, name, channel):
     listening_socket = socket(AF_INET, SOCK_STREAM)
-    listening_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-    try:
-        listening_socket.bind(('', port))
-    except Exception:
-        unable_to_listen_port(port)
+    listening_socket.bind(('', port))
     listening_socket.listen(5)
-    
- 
-    print(f"Channel \"{channel['name']}\" is created on port {channel['port']}, with a capacity of " \
-        f"{channel['capacity']}.")
 
     return listening_socket
 
 def process_connections(listening_socket, channels, name):
-    # is this where you proccess the number of clients u can handle?
     while True:
         client_socket, client_address = listening_socket.accept()
         client_thread = Thread(target=handle_client, 
                 args=(client_socket, client_address, channels, name))
         client_thread.start()
-       
-        
 
 
 # CHATGPT
@@ -118,6 +105,7 @@ def handle_stdin(channels):
             if cmd == "/kick":
                 if len(args) != 2:
                     print("Usage: /kick channel_name client_username")
+                    sys.stdout.flush()
                 channel = args[0]
                 username = args[1]
                 if channel not in channels:
@@ -131,15 +119,11 @@ def handle_stdin(channels):
                     try:
                         client_socket.sendall(b"[Server Message] You are removed from the channel.\n")
                         stdout.flush()
-                        # client_socket.shutdown(SHUT_RDWR)
                     except Exception as e:
                         print(f"[Warning] Failed to notify or shutdown: {e}")
                     finally:
                         print(f"[Server Message] Kicked {username}.")
                         client_socket.close()
-
-
-
 
         #     # Example: /list channel
         #     if cmd == "/list":
@@ -157,7 +141,7 @@ def handle_stdin(channels):
         #         pass
 
         except Exception as e:
-            print(f"[Error] Failed to handle stdin command: {e}")
+            pass
 
 
 
@@ -171,19 +155,34 @@ REF: Function was then modified to work with my other functions,
 """
 
 def listen_on_ports(channels):
+    failed_ports = []
+    successful_sockets = {}
     for channel in channels.values():
-        server_socket = start_server(channel["port"], channel["name"], channel)
-        if server_socket: # to listen at multiple ports at once
-            Thread(target=process_connections, args=(server_socket, channels, channel["name"]), daemon=True).start()
+        try:
+            server_socket = start_server(channel["port"], channel["name"], channel)
+            if server_socket:
+                successful_sockets[channel["name"]] = server_socket
+                
+        except Exception:  # Catch bind() failure from start_server
+            failed_ports.append(channel["port"])
 
-    # Stdin Thread should be created when you start the server
-    Thread(target=handle_stdin, args=(channels,), daemon=True).start()
+    if failed_ports: # To print out failed ports first before starting
+        for port in failed_ports:
+            print(f"Error: unable to listen on port {port}.", file=sys.stderr)
+        sys.exit(EXIT_STATUS["PORT"])
+    else:
+        for channel_name, socket in successful_sockets.items():
+            print(f"Channel \"{channel_name}\" is created on port {channels[channel_name]['port']}, with a capacity of " \
+                f"{channels[channel_name]['capacity']}.")
+            Thread(target=process_connections, args=(socket, channels, channel_name), daemon=True).start()
 
-    print("Welcome to chatserver.")
-    sys.stdout.flush()
+        # Stdin thread should only run if we didn't exit
+        Thread(target=handle_stdin, args=(channels,), daemon=True).start()
+        print("Welcome to chatserver.")
+        sys.stdout.flush()
 
-    while True:
-        pass  # Keep main thread alive  
+        while True:
+            pass  # Keep main thread alive 
 
 # Run the server
 if __name__ == "__main__":
@@ -197,4 +196,3 @@ if __name__ == "__main__":
         print("Server shutting down. BYEEE")
 
 
-    

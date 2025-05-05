@@ -45,9 +45,11 @@ except Exception: # unable to create a socket and connect to server
 
 # If your client detects that the connection to the server has been closed then it should print the following 246
 #  message (terminated by a newline) to stderr:
-sock.send(username.encode())
-print(f"Welcome to chatclient, {username}.")
-
+try:
+    sock.send(username.encode())
+    print(f"Welcome to chatclient, {username}.", flush=True)
+except Exception as e:
+    print(e)
 recv_thread = Thread(target=receive_server_message, args=(sock,), daemon=True)
 send_thread = Thread(target=send_server_message, args=(sock,), daemon=True)
 
