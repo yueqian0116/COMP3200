@@ -6,7 +6,8 @@ import sys
 EXIT_STATUS = {
     "USAGE": 4,
     "INVALID_CONFIG_FILE": 5,
-    "PORT": 6
+    "PORT": 6,
+    "DUPLICATE_NAME": 2
 }
 
 def usage_error():
@@ -26,6 +27,12 @@ def check_duplicate_port(port: int, channels: dict) -> bool:
         if (channel['port'] == port):
             return True
     return False
+
+def duplicate_name(channel: str, username: str):
+    print(f"[Server Message] Channel \"{channel}\" already "\
+            "has user {username}.")
+    sys.stdout.flush()
+    sys.exit(EXIT_STATUS["DUPLICATE_NAME"])
 
 def check_config_file(config_file):
     channels = {}
@@ -126,4 +133,16 @@ def check_arguments(argv):
 def capacity_reached(channels: dict, name: str) -> bool:
     return len(channels[name]["users"]) >= channels[name]["capacity"] 
 
-
+def process_message(message: str, client_socket, channels: dict,
+        username: str, name:str):
+    if message.startswith('/'):
+        # parse commands
+        print("This is a command")
+        sys.stdout.flush()
+    
+    broadcast_msg = f"[{username}] {message}"
+    print(broadcast_msg, end='')
+    sys.stdout.flush()
+    for user in channels[name]["users"]:
+        sock = channels[name]["sockets"][user]
+        sock.sendall(broadcast_msg.encode())

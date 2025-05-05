@@ -20,17 +20,23 @@ def handle_client(client_socket, client_address, channels, name):
     with client_socket:
         # getting username from client, CHATGPT
         username = client_socket.recv(BUFSIZE).decode()
+        """
+        if username in channels[name]["users"] or 
+        username in channels[name]["queue"]:
+            duplicate_name(name, username)
+        """
         if not capacity_reached(channels, name):
             channels[name]["users"].append(username)
             channels[name]["sockets"][username] = client_socket
-           
+
             message = f"[Server Message] You have joined the channel \"{name}\".\n"
         else:
             channels[name]["queue"].append(username) 
             users_in_front = len(channels[name]["queue"]) - 1 
-            message = f"[Server Message] You are in the waiting queue and there are {users_in_front} user(s) ahead of you.\n"
-                      
-        print(f"[Server Message] {username} has joined the channel \"{name}\"")
+            message = f"[Server Message] You are in the waiting queue "\
+                        "and there are {users_in_front} user(s) ahead of you.\n"
+        print(f"[Server Message] {username} has joined the channel \"{name}\".")
+        sys.stdout.flush()
         # Send a message to the client
         # message = f"Welcome to the chatclient, {host}.\n"
         client_socket.sendall(message.encode())
@@ -44,8 +50,9 @@ def handle_client(client_socket, client_address, channels, name):
                     # print(f"Counter value updated to: {counter}")
                     # Simulate doing some work
                     # sleep(2)
-                    data = data.decode().upper() 
-                    client_socket.sendall(data.encode())
+                    message = data.decode()
+                    process_message(message, client_socket, channels, username, name)
+                    # client_socket.sendall(data.encode())
         except(ConnectionResetError, ConnectionAbortedError, OSError):
             pass
 
@@ -174,13 +181,13 @@ def listen_on_ports(channels):
         for channel_name, socket in successful_sockets.items():
             print(f"Channel \"{channel_name}\" is created on port {channels[channel_name]['port']}, with a capacity of " \
                 f"{channels[channel_name]['capacity']}.")
+            sys.stdout.flush()
             Thread(target=process_connections, args=(socket, channels, channel_name), daemon=True).start()
 
         # Stdin thread should only run if we didn't exit
         Thread(target=handle_stdin, args=(channels,), daemon=True).start()
         print("Welcome to chatserver.")
         sys.stdout.flush()
-
         while True:
             pass  # Keep main thread alive 
 
@@ -194,5 +201,7 @@ if __name__ == "__main__":
         listen_on_ports(channels)
     except KeyboardInterrupt:
         print("Server shutting down. BYEEE")
+        sys.stdout.flush()
+
 
 
