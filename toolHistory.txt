@@ -261,4 +261,64 @@ try:
 except (ConnectionResetError, ConnectionAbortedError):
     print(f"Connection closed for {username}")
 Would you like to auto-replace a kicked user with the next one in the queue too?
---------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------
+User (This is when I encountered a bug that I cannot fix, The stdin is 
+still waiting for input eventhough socket has closed)
+PS C:\Users\firei\OneDrive\Desktop\COMP3200> python3 chatclient.py 1043 banana
+Welcome to chatclient, banana.
+[Server Message] You have joined the channel "abc".
+as
+AS
+s
+S
+[Server Message] You are removed from the channel.
+Error: server connection closed.
+s
+
+Now I cant exit the program
+--------------------------------------------------------------------------------------------------
+ChatGPT
+Thanks for testing — you're right. The reason you can still type and the program doesn’t exit is that your main thread is stuck in this infinite loop:
+
+python
+Copy
+Edit
+try:
+    while True:
+        pass
+except KeyboardInterrupt:
+    sock.close()
+Even though the background thread (receive_server_message) calls exit(8), it only ends that thread — not the main thread.
+
+Fix: Replace the infinite while True: pass with join() on the sender thread
+Let’s modify your code to:
+
+Wait for the sender thread to finish (user input).
+
+Exit properly if the server disconnects.
+
+Final Minimal Fix
+Here is the updated bottom portion of your script:
+
+python
+Copy
+Edit
+recv_thread = Thread(target=receive_server_message, args=(sock,), daemon=True)
+send_thread = Thread(target=send_server_message, args=(sock,), daemon=True)
+
+recv_thread.start()
+send_thread.start()
+
+try:
+    recv_thread.join()
+except KeyboardInterrupt:
+    sock.close()
+    exit(0)
+This way:
+
+If the server disconnects, receive_server_message will print the error and exit the program.
+
+If you press Ctrl+C, it will also close gracefully.
+
+Let me know if you want it to terminate on client-side EOF (Ctrl+D) as well.
+-------------------------------------------------------------------------------------------------------------------------
