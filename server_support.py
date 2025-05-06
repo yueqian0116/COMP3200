@@ -76,7 +76,8 @@ def check_config_file(config_file):
                     "capacity": capacity,
                     "users": [],    # initialise user and queue
                     "queue": [],
-                    "sockets": {} # dict: user: socket
+                    "sockets": {}, # dict: user: socket
+                    "q_sockets": {}
                 }
                 channels[name] = channel         
     except Exception as e:
@@ -173,12 +174,57 @@ def process_message(message: str, client_socket, channels: dict,
                 except Exception:
                     msg = f"[Server Message] Failed to send \"{filepath}\" to {to_user}\n"
                     client_socket.sendall(msg.encode())
+          
+    elif message.startswith("/quit"):
+        broadcast_msg = f"[Server Message] {username} has left the channel.\n"
+        if not user_in_queue(username, channels, name):
+            broadcast(broadcast_msg, channels, name)
+        else:
+            print(broadcast_msg, end='')
+            sys.stdout.flush()
+        # remove user from sockets
+        remove_user_from_users(username, channels, name)
+
     else:    
         broadcast_msg = f"[{username}] {message}"
-        print(broadcast_msg, end='')
-        sys.stdout.flush()
-        for user in channels[name]["users"]:
+        broadcast(broadcast_msg, channels, name)
+        # print(broadcast_msg, end='')
+        # sys.stdout.flush()
+        # for user in channels[name]["users"]:
+        #     sock = channels[name]["sockets"][user]
+        #     sock.sendall(broadcast_msg.encode())
+
+# send message to all clients and server
+def broadcast(message, channels, name):
+    print(message, end='')
+    sys.stdout.flush()
+    for user in channels[name]["users"]:
             sock = channels[name]["sockets"][user]
-            sock.sendall(broadcast_msg.encode())
+            sock.sendall(message.encode())
 
+def user_in_queue(username: str, channels: dict, name: str) -> bool:
+    return username in channels[name]["queue"]
 
+def remove_user_from_users(username: str, channels: dict, name: str):
+    if username in channels[name]["users"]:
+        channels[name]["users"].remove(username)
+    if username in channels[name]["sockets"]:
+        channels[name]["sockets"].pop(username)
+    if channels[name]["queue"] and channels[name]["q_sockets"]: # there is someone in the queue
+        userToAdd, socketToAdd = next(iter(channels[name]["q_sockets"].items()))
+        add_user_to_users(userToAdd, channels, name, socketToAdd)
+        remove_user_from_queue(userToAdd, channels, name)
+
+def add_user_to_users(username: str, channels: dict, name: str, client_sock):
+    channels[name]["users"].append(username)
+    channels[name]["sockets"][username] = client_sock
+
+def add_user_to_queue(username: str, channels: dict, name: str, client_sock):
+    channels[name]["queue"].append(username)
+    channels[name]["q_sockets"][username] = client_sock 
+
+def remove_user_from_queue(username: str, channels: dict, name: str):
+    if username in channels[name]["queue"]:
+        channels[name]["queue"].remove(username)
+    if username in channels[name]["q_sockets"]:
+        channels[name]["q_sockets"].pop(username)  

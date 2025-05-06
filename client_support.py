@@ -24,6 +24,12 @@ def username_error(channel_name, client_username):
     print(f"[Server Message] Channel \"{channel_name}\" already has user {client_username}.", file=sys.stderr)
     sys.exit(EXIT_STATUS["USERNAME"])
 
+def server_closed():
+    print(f"Error: server connection closed.", file=sys.stderr)
+    sys.exit(EXIT_STATUS["CONNECTION_CLOSED"])
+
+
+
 def channel_full(number_of_users):
     print(f"[Server Message] You are in the waiting queue and there are {number_of_users} user(s) ahead of you.")
 

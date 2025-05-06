@@ -35,7 +35,7 @@ def receive_server_message(sock):
             stdout.buffer.write(data)
             stdout.flush()
     except (ConnectionResetError, OSError, BrokenPipeError) as e:
-        pass
+        server_closed()
 
 def receive_initial_message(sock):
     data = sock.recv(BUFSIZE)
@@ -52,15 +52,22 @@ def receive_initial_message(sock):
         stdout.buffer.write(data)
         stdout.flush()
 
-
-
 def send_server_message(sock):
     try:
         for line in stdin: # Read line from stdin
             sock.send(line.encode()) # Send data to server
             stdout.flush()
-    except:
-        pass
+            if line.strip() == "/quit":
+                sock.close()
+                sys.exit(0)
+        # EOF detected
+        msg = "/quit"
+        sock.send(msg.encode())
+        sock.close()
+        exit(0)
+    except (BrokenPipeError, ConnectionResetError):
+        server_closed()
+
 
 # sock.connect(serverAddr[0][4])
 try:
@@ -78,10 +85,12 @@ except Exception: # unable to create a socket and connect to server
 #  message (terminated by a newline) to stderr:
 try:
     sock.send(username.encode())
-except Exception as e:
-    print(e)
+    receive_initial_message(sock)
 
-receive_initial_message(sock)
+except (BrokenPipeError, ConnectionResetError):
+    server_closed()
+
+# receive_initial_message(sock)
 
 recv_thread = Thread(target=receive_server_message, args=(sock,), daemon=True)
 send_thread = Thread(target=send_server_message, args=(sock,), daemon=True)
