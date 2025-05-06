@@ -34,8 +34,8 @@ def handle_client(client_socket, client_address, channels, name):
             message = f"[Server Message] You have joined the channel \"{name}\".\n"
         else:
             # channels[name]["queue"].append(username) 
-            # users_in_front = len(channels[name]["queue"]) - 1 
-            add_users_to_queue(username, channels, name, client_socket)
+            users_in_front = len(channels[name]["queue"]) - 1
+            add_user_to_queue(username, channels, name, client_socket)
             message = f"[Server Message] You are in the waiting queue "\
                         f"and there are {users_in_front} user(s) ahead of you.\n"
         print(f"[Server Message] {username} has joined the channel \"{name}\".")
