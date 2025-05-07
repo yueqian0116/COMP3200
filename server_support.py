@@ -118,8 +118,9 @@ def capacity_reached(channels: dict, name: str) -> bool:
 
 def process_message(message: str, client_socket, channels: dict,
         username: str, name:str):
-    token = message.split()
+    # token = message.split()
     if message.startswith('/send'):
+        token = message.split()
         send_failed = False
         if len(token) != 3:
             reply = "[Server Message] Usage: /send target_client_username file_path\n"
@@ -179,6 +180,24 @@ def process_message(message: str, client_socket, channels: dict,
                     f"Queue: {len(channel['queue'])}\n"
             client_socket.sendall(msg.encode())
 
+    elif message.startswith("/whisper"):
+        if not user_in_queue(username, channels, name):
+            token = message.split()
+            receiver_client = token[1]
+            msg_to_send = token[2]
+            if not user_in_queue(receiver_client, channels, name) and not user_in_users(receiver_client, channels, name):
+                msg = f"[Server Message] {receiver_client} is not in the channel.\n"
+                client_socket.sendall(msg.encode())
+            else:
+                receiver_sock = channels[name]["sockets"][receiver_client]
+                msg_to_receiver = f"[{username} whispers to you] {msg_to_send}\n"
+                receiver_sock.sendall(msg_to_receiver.encode())
+                msg = f"[{username} whispers to {receiver_client}] {msg_to_send}\n"
+                client_socket.sendall(msg.encode())
+                print(msg, end='')
+                sys.stdout.flush()
+
+
     else:    
         broadcast_msg = f"[{username}] {message}"
         if user_in_queue(username, channels, name):
@@ -196,6 +215,9 @@ def broadcast(message, channels, name):
 
 def user_in_queue(username: str, channels: dict, name: str) -> bool:
     return username in channels[name]["queue"]
+
+def user_in_users(username: str, channels: dict, name: str) -> bool:
+    return username in channels[name]["users"]
 
 def remove_user_from_users(username: str, channels: dict, name: str):
     if username in channels[name]["users"]:
@@ -224,3 +246,4 @@ def remove_user_from_queue(username: str, channels: dict, name: str):
         channels[name]["queue"].remove(username)
     if username in channels[name]["q_sockets"]:
         channels[name]["q_sockets"].pop(username)  
+

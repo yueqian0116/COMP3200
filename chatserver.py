@@ -109,10 +109,11 @@ def handle_stdin(channels):
                 channel = args[0]
                 username = args[1]
                 if channel not in channels:
-                    print(f"[Server Message] Channel \"{channel}\" does not exist. ")
+                    print(f"[Server Message] Channel \"{channel}\" does not exist.")
+                    sys.stdout.flush()
                 elif username not in channels[channel]["users"]:
-                    print(f"[Server Message] {username} is not in the channel. ")
-
+                    print(f"[Server Message] {username} is not in the channel.")
+                    sys.stdout.flush()
                 # channel and username exists, Kick user
                 client_socket = channels[channel]["sockets"][username]
                 if client_socket:
@@ -123,22 +124,8 @@ def handle_stdin(channels):
                         print(f"[Warning] Failed to notify or shutdown: {e}")
                     finally:
                         print(f"[Server Message] Kicked {username}.")
+                        sys.stdout.flush()
                         client_socket.close()
-
-        #     # Example: /list channel
-        #     if cmd == "/list":
-        #         if len(args) != 1:
-        #             print("[Usage] /list channel")
-        #         elif args[0] not in channels:
-        #             print(f"[Server Message] Channel \"{args[0]}\" does not exist.")
-        #         else:
-        #             users = channels[args[0]]["users"]
-        #             print(f"[Server Message] Users in \"{args[0]}\": {', '.join(users)}")
-
-        #     # Add more commands here
-        #     else:
-        #         # Invalid command keyword
-        #         pass
 
         except Exception as e:
             pass

@@ -61,12 +61,10 @@ def send_server_message(sock):
                     sys.stdout.flush()
                 
                 else: # valid quit
-                    sys.stdout.flush()
                     sock.send(line.encode()) # Send data to server
                     stdout.flush()
                     sock.shutdown(SHUT_RDWR)
                     sock.close()
-                    #print("hello")
                     sys.exit(0)
 
             elif line.startswith("/list"):
@@ -76,7 +74,14 @@ def send_server_message(sock):
                 else:
                     sock.send(line.encode()) # Send data to server
                     stdout.flush()
-
+            elif line.startswith("/whisper"):
+                token = line.split()
+                if token[0] != "/whisper" or len(token) != 3:
+                    print(f"[Server Message] Usage: /whisper receiver_client_username chat_message")
+                    sys.stdout.flush()
+                else:
+                    sock.send(line.encode()) # Send data to server
+                    stdout.flush()
             else:
                 sock.send(line.encode()) # Send data to server
                 stdout.flush()
@@ -85,7 +90,6 @@ def send_server_message(sock):
         sock.send(msg.encode())
         sock.shutdown(SHUT_RDWR)
         sock.close()
-        #print("eof")
         sys.exit(0)
     except (BrokenPipeError, ConnectionResetError):
         server_closed()

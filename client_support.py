@@ -32,6 +32,7 @@ def server_closed():
 
 def channel_full(number_of_users):
     print(f"[Server Message] You are in the waiting queue and there are {number_of_users} user(s) ahead of you.")
+    sys.stdout.flush()
 
 def channel_has_user(username, member_list: list) -> bool:
     return username in member_list
@@ -53,13 +54,5 @@ def check_arguments(argv) -> None:
     # client port checking
     if not port.isdigit():
         unable_to_connect_port(port)
-
-# def process_commands(msg):
-#     token = msg.split()
-#     if msg.startswith("/send"):
-#         if len(token) != 3:
-#             print("[Server Message] Usage: /send target_client_username file_path ")
-
-
 
     
