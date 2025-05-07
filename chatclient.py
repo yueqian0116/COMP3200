@@ -35,7 +35,7 @@ def receive_server_message(sock):
             stdout.buffer.write(data)
             stdout.flush()
     except (ConnectionResetError, OSError, BrokenPipeError) as e:
-        server_closed()
+        pass
 
 def receive_initial_message(sock):
     data = sock.recv(BUFSIZE)
@@ -55,16 +55,30 @@ def receive_initial_message(sock):
 def send_server_message(sock):
     try:
         for line in stdin: # Read line from stdin
-            sock.send(line.encode()) # Send data to server
-            stdout.flush()
-            if line.strip() == "/quit":
-                sock.close()
-                sys.exit(0)
+            if line.startswith("/quit"):
+                if line != "/quit\n":
+                    print("[Server Message] Usage: /quit")
+                    sys.stdout.flush()
+                
+                else: # valid quit
+                    sys.stdout.flush()
+                    sock.send(line.encode()) # Send data to server
+                    stdout.flush()
+                    sock.shutdown(SHUT_RDWR)
+                    sock.close()
+                    #print("hello")
+                    sys.exit(0)
+            else:
+                sock.send(line.encode()) # Send data to server
+                stdout.flush()
+
         # EOF detected
         msg = "/quit"
         sock.send(msg.encode())
+        sock.shutdown(SHUT_RDWR)
         sock.close()
-        exit(0)
+        #print("eof")
+        sys.exit(0)
     except (BrokenPipeError, ConnectionResetError):
         server_closed()
 
@@ -99,12 +113,11 @@ recv_thread.start()
 send_thread.start()
 
 try:
+    send_thread.join()
     recv_thread.join()
 except KeyboardInterrupt:
     sock.close()
 
-
 # sock.close()
-
 
 

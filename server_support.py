@@ -177,13 +177,13 @@ def process_message(message: str, client_socket, channels: dict,
           
     elif message.startswith("/quit"):
         broadcast_msg = f"[Server Message] {username} has left the channel.\n"
+        remove_user_from_users(username, channels, name)
         if not user_in_queue(username, channels, name):
             broadcast(broadcast_msg, channels, name)
         else:
             print(broadcast_msg, end='')
             sys.stdout.flush()
         # remove user from sockets
-        remove_user_from_users(username, channels, name)
 
     else:    
         broadcast_msg = f"[{username}] {message}"
