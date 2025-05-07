@@ -183,7 +183,13 @@ def process_message(message: str, client_socket, channels: dict,
         else:
             print(broadcast_msg, end='')
             sys.stdout.flush()
-        # remove user from sockets
+
+    elif message.startswith("/list"): # also apply to q users
+        for channel in channels.values():
+            msg = f"[Channel] {channel['name']} {channel['port']} "\
+                f"Capacity: {len(channel['users'])}/{channel['capacity']}, "\
+                    f"Queue: {len(channel['queue'])}\n"
+            client_socket.sendall(msg.encode())
 
     else:    
         broadcast_msg = f"[{username}] {message}"

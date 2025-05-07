@@ -68,10 +68,18 @@ def send_server_message(sock):
                     sock.close()
                     #print("hello")
                     sys.exit(0)
+
+            elif line.startswith("/list"):
+                if line != "/list\n":
+                    print("[Server Message] Usage: /list")
+                    sys.stdout.flush()
+                else:
+                    sock.send(line.encode()) # Send data to server
+                    stdout.flush()
+
             else:
                 sock.send(line.encode()) # Send data to server
                 stdout.flush()
-
         # EOF detected
         msg = "/quit"
         sock.send(msg.encode())
