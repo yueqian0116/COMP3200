@@ -30,13 +30,14 @@ def handle_client(client_socket, client_address, channels, name):
         if not capacity_reached(channels, name):
             add_user_to_users(username, channels, name, client_socket)
             message = f"[Server Message] You have joined the channel \"{name}\".\n"
+            print(f"[Server Message] {username} has joined the channel \"{name}\".")
+            sys.stdout.flush()
         else:
             add_user_to_queue(username, channels, name, client_socket)
             users_in_front = len(channels[name]["queue"]) - 1
             message = f"[Server Message] You are in the waiting queue "\
                         f"and there are {users_in_front} user(s) ahead of you.\n"
-        print(f"[Server Message] {username} has joined the channel \"{name}\".")
-        sys.stdout.flush()
+        
         client_socket.sendall(message.encode())
 
         try:
@@ -54,12 +55,7 @@ def handle_client(client_socket, client_address, channels, name):
             pass
 
         finally: 
-             # cleanup
-            if username in channels[name]["users"]:
-                channels[name]["users"].remove(username)
-
-            if username in channels[name]["sockets"]:
-                channels[name]["sockets"].pop(username)
+             remove_user_from_users(username, channels, name)
             # How to notify to all other clients? [Server Message] client_username has left the channel. 
         # error or EOF - client disconnected
 
@@ -199,5 +195,6 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("Server shutting down. BYEEE")
         sys.stdout.flush()
+
 
 

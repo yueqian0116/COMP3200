@@ -86,17 +86,6 @@ def check_config_file(config_file):
     return channels
 
 
-# def testing():
-#     channel = {
-#         "channel1": "userA",
-#         "channel2": "userB",
-#         "channel3": "abc",  # Duplicate value (userA)
-#     }
-
-#     values = list(channel.values())
-#     print(values)
-
-
 def check_arguments(argv):
     afk_time = 100
     config_file = None
@@ -122,7 +111,6 @@ def check_arguments(argv):
         usage_error()
 
     channels = check_config_file(config_file)
-    # print(channels)
     return afk_time, channels
 
 def capacity_reached(channels: dict, name: str) -> bool:
@@ -193,13 +181,11 @@ def process_message(message: str, client_socket, channels: dict,
 
     else:    
         broadcast_msg = f"[{username}] {message}"
-        broadcast(broadcast_msg, channels, name)
-        # print(broadcast_msg, end='')
-        # sys.stdout.flush()
-        # for user in channels[name]["users"]:
-        #     sock = channels[name]["sockets"][user]
-        #     sock.sendall(broadcast_msg.encode())
-
+        if user_in_queue(username, channels, name):
+            pass # do ntg
+        else:
+            broadcast(broadcast_msg, channels, name)
+       
 # send message to all clients and server
 def broadcast(message, channels, name):
     print(message, end='')
@@ -220,6 +206,10 @@ def remove_user_from_users(username: str, channels: dict, name: str):
         userToAdd, socketToAdd = next(iter(channels[name]["q_sockets"].items()))
         add_user_to_users(userToAdd, channels, name, socketToAdd)
         remove_user_from_queue(userToAdd, channels, name)
+        message = f"[Server Message] You have joined the channel \"{name}\".\n"
+        print(f"[Server Message] {userToAdd} has joined the channel \"{name}\".")
+        sys.stdout.flush()
+        socketToAdd.sendall(message.encode())
 
 def add_user_to_users(username: str, channels: dict, name: str, client_sock):
     channels[name]["users"].append(username)
