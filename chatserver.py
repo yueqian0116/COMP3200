@@ -19,29 +19,7 @@ def handle_client(client_socket, client_address, channels, name):
     host,_ = getnameinfo(client_address, 0)
     with client_socket:
         username = client_socket.recv(BUFSIZE).decode()
-        
-        # if username in channels[name]["users"] or \
-        # username in channels[name]["queue"]:
-        #     msg = f"[Server Message] Channel \"{name}\" already "\
-        #     f"has user {username}."
-        #     client_socket.sendall(msg.encode())
-        #     return
-
-        # if not capacity_reached(channels, name):
-        #     add_user_to_users(username, channels, name, client_socket)
-        #     message = f"[Server Message] You have joined the channel \"{name}\".\n"
-        #     print(f"[Server Message] {username} has joined the channel \"{name}\".")
-        #     sys.stdout.flush()
-        # else:
-        #     add_user_to_queue(username, channels, name, client_socket)
-        #     users_in_front = len(channels[name]["queue"]) - 1
-        #     message = f"[Server Message] You are in the waiting queue "\
-        #                 f"and there are {users_in_front} user(s) ahead of you.\n"
-        
-        # client_socket.sendall(message.encode())
-        
         join_channel(username, channels, name, client_socket)
-        
 
         try:
             while data := client_socket.recv(BUFSIZE):
@@ -61,8 +39,6 @@ def handle_client(client_socket, client_address, channels, name):
              remove_user_from_users(username, channels, name)
             # How to notify to all other clients? [Server Message] client_username has left the channel. 
         # error or EOF - client disconnected
-
-
 
 def start_server(port, name, channel):
     listening_socket = socket(AF_INET, SOCK_STREAM)
@@ -93,6 +69,9 @@ def handle_stdin(channels):
             line = stdin.readline()
             if not line:
                 continue
+            line = line.rstrip('\n')  # Only remove newline
+            if check_for_trailing_spaces(line):
+                continue 
             line = line.strip()
             if not line.startswith('/'):
                 continue
@@ -122,16 +101,62 @@ def handle_stdin(channels):
                 if client_socket:
                     try:
                         client_socket.sendall(b"[Server Message] You are removed from the channel.\n")
-                        stdout.flush()
+                        sys.stdout.flush()
                     except Exception as e:
                         print(f"[Warning] Failed to notify or shutdown: {e}")
                     finally:
                         print(f"[Server Message] Kicked {username}.")
                         sys.stdout.flush()
                         client_socket.close()
+            elif cmd == "/mute":
+                if len(args) != 3:
+                    print("Usage: /mute channel_name client_username duration")
+                    sys.stdout.flush()
+                    continue
+                channel = args[0]
+                client_to_mute = args[2]
+                duration = args[3]
+
+                if channel not in channels:
+                    print(f"[Server Message] Channel \"{channel}\" does not exist.")
+                    sys.stdout.flush()
+                elif client_to_mute not in channels[channel]["users"]:
+                    print(f"[Server Message] {client_to_mute} is not in the channel.")
+                    sys.stdout.flush()
+                elif not duration.isdigit() or int(duration) < 0:
+                    print("[Server Message] Invalid mute duration.")
+                    sys.stdout.flush()
+                else: # valid mute command
+                    pass
+            elif cmd == "/empty":
+                if len(args) != 1:
+                    print("Usage: /empty channel_name")
+                    sys.stdout.flush()
+                
+                channel = args[0]
+                if channel not in channels:
+                    print(f"[Server Message] Channel \"{channel}\" does not exist.")
+                    sys.stdout.flush()
+                else:
+                    # remove queue users first
+                    msg = "[Server Message] You are removed from the channel.\n"
+                    for q_user in channels[channel]["queue"]:
+                        q_user_socket = channels[channel]["q_sockets"][q_user]
+                        q_user_socket.sendall(msg.encode())
+                        q_user_socket.close() # might have issues
+                        remove_user_from_queue(q_user, channels, channel)
+                    # remove user users
+                    for user in channels[channel]["users"]:
+                        user_socket = channels[channel]["sockets"][user]
+                        user_socket.sendall(msg.encode())
+                        user_socket.close()
+                        remove_user_from_users(user, channels, channel)
+                    print(f"[Server Message] \"{channel}\" has been emptied.")
+                    sys.stdout.flush()
+
 
         except Exception as e:
-            pass
+            print(e)
 
 
 
@@ -143,7 +168,6 @@ Function enables listening to multiple ports at once
 REF: This function was generated by ChatGPT
 REF: Function was then modified to work with my other functions,
 """
-
 def listen_on_ports(channels):
     failed_ports = []
     successful_sockets = {}
@@ -177,15 +201,9 @@ def listen_on_ports(channels):
 # Run the server
 if __name__ == "__main__":
     afk_time, channels = check_arguments(argv)
-    # print("afk_time: ", afk_time)
-    # print("channels: ", channels)
-    # print(channels.values())
     try:
         listen_on_ports(channels)
     except KeyboardInterrupt:
-        print("Server shutting down. BYEEE")
+        print("[Server Message] Server shuts down.")
         sys.stdout.flush()
-
-
-
 

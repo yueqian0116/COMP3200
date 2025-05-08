@@ -285,4 +285,15 @@ def remove_user_from_queue(username: str, channels: dict, name: str):
     if username in channels[name]["q_sockets"]:
         channels[name]["q_sockets"].pop(username)  
 
+def check_for_trailing_spaces(line):
+    if line.rstrip() != line:
+        if line.startswith("/kick"):
+            print("Usage: /kick channel_name client_username")
+        elif line.startswith("/mute"):
+            print("Usage: /mute channel_name client_username duration")
+        elif line.startswith("/empty"):
+            print("Usage: /empty channel_name")
 
+        sys.stdout.flush()
+        return True  # Tell caller to skip further processing
+    return False
