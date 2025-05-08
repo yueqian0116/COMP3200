@@ -118,7 +118,6 @@ def capacity_reached(channels: dict, name: str) -> bool:
 
 def process_message(message: str, client_socket, channels: dict,
         username: str, name:str):
-    # token = message.split()
     if message.startswith('/send'):
         token = message.split()
         send_failed = False
@@ -165,13 +164,6 @@ def process_message(message: str, client_socket, channels: dict,
                     client_socket.sendall(msg.encode())
           
     elif message.startswith("/quit"):
-        # broadcast_msg = f"[Server Message] {username} has left the channel.\n"
-        # remove_user_from_users(username, channels, name)
-        # if not user_in_queue(username, channels, name):
-        #     broadcast(broadcast_msg, channels, name)
-        # else:
-        #     print(broadcast_msg, end='')
-        #     sys.stdout.flush()
         quit_channel(username, channels, name)
 
     elif message.startswith("/list"): # also apply to q users
@@ -212,8 +204,6 @@ def process_message(message: str, client_socket, channels: dict,
             quit_channel(username, channels, name)
             join_channel(username, channels, channel_to_switch, client_socket)
 
-
-
     else:    
         broadcast_msg = f"[{username}] {message}"
         if user_in_queue(username, channels, name):
@@ -247,6 +237,8 @@ def join_channel(username: str, channels: dict, name: str, client_socket):
             return
 
     if not capacity_reached(channels, name):
+        # msg = f"Welcome to chatclient, {username}.\n"
+        # client_socket.sendall(msg.encode())
         add_user_to_users(username, channels, name, client_socket)
         message = f"[Server Message] You have joined the channel \"{name}\".\n"
         print(f"[Server Message] {username} has joined the channel \"{name}\".")

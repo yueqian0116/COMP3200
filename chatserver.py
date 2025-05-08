@@ -39,7 +39,9 @@ def handle_client(client_socket, client_address, channels, name):
         #                 f"and there are {users_in_front} user(s) ahead of you.\n"
         
         # client_socket.sendall(message.encode())
+        
         join_channel(username, channels, name, client_socket)
+        
 
         try:
             while data := client_socket.recv(BUFSIZE):

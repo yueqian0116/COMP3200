@@ -140,6 +140,3 @@ except KeyboardInterrupt:
     sock.close()
 
 # sock.close()
-
-
-
