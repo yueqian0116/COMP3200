@@ -20,25 +20,26 @@ def handle_client(client_socket, client_address, channels, name):
     with client_socket:
         username = client_socket.recv(BUFSIZE).decode()
         
-        if username in channels[name]["users"] or \
-        username in channels[name]["queue"]:
-            msg = f"[Server Message] Channel \"{name}\" already "\
-            f"has user {username}."
-            client_socket.sendall(msg.encode())
-            return
+        # if username in channels[name]["users"] or \
+        # username in channels[name]["queue"]:
+        #     msg = f"[Server Message] Channel \"{name}\" already "\
+        #     f"has user {username}."
+        #     client_socket.sendall(msg.encode())
+        #     return
 
-        if not capacity_reached(channels, name):
-            add_user_to_users(username, channels, name, client_socket)
-            message = f"[Server Message] You have joined the channel \"{name}\".\n"
-            print(f"[Server Message] {username} has joined the channel \"{name}\".")
-            sys.stdout.flush()
-        else:
-            add_user_to_queue(username, channels, name, client_socket)
-            users_in_front = len(channels[name]["queue"]) - 1
-            message = f"[Server Message] You are in the waiting queue "\
-                        f"and there are {users_in_front} user(s) ahead of you.\n"
+        # if not capacity_reached(channels, name):
+        #     add_user_to_users(username, channels, name, client_socket)
+        #     message = f"[Server Message] You have joined the channel \"{name}\".\n"
+        #     print(f"[Server Message] {username} has joined the channel \"{name}\".")
+        #     sys.stdout.flush()
+        # else:
+        #     add_user_to_queue(username, channels, name, client_socket)
+        #     users_in_front = len(channels[name]["queue"]) - 1
+        #     message = f"[Server Message] You are in the waiting queue "\
+        #                 f"and there are {users_in_front} user(s) ahead of you.\n"
         
-        client_socket.sendall(message.encode())
+        # client_socket.sendall(message.encode())
+        join_channel(username, channels, name, client_socket)
 
         try:
             while data := client_socket.recv(BUFSIZE):
@@ -182,6 +183,7 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("Server shutting down. BYEEE")
         sys.stdout.flush()
+
 
 
 

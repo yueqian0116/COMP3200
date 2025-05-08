@@ -81,8 +81,17 @@ def send_server_message(sock):
                     sys.stdout.flush()
                 else:
                     sock.send(line.encode()) # Send data to server
-                    stdout.flush()
-            else:
+                    sys.stdout.flush()
+            elif line.startswith("/switch"):
+                token = line.split()
+                if token[0] != "/switch" or len(token) != 2 or ' ' in token[1]:
+                    print(f"[Server Message] Usage: /switch channel_name")
+                    sys.stdout.flush()
+                else:
+                    sock.send(line.encode()) # Send data to server
+                    sys.stdout.flush()
+
+            else: # broadcast message / not a command
                 sock.send(line.encode()) # Send data to server
                 stdout.flush()
         # EOF detected
@@ -131,5 +140,6 @@ except KeyboardInterrupt:
     sock.close()
 
 # sock.close()
+
 
 

@@ -165,13 +165,14 @@ def process_message(message: str, client_socket, channels: dict,
                     client_socket.sendall(msg.encode())
           
     elif message.startswith("/quit"):
-        broadcast_msg = f"[Server Message] {username} has left the channel.\n"
-        remove_user_from_users(username, channels, name)
-        if not user_in_queue(username, channels, name):
-            broadcast(broadcast_msg, channels, name)
-        else:
-            print(broadcast_msg, end='')
-            sys.stdout.flush()
+        # broadcast_msg = f"[Server Message] {username} has left the channel.\n"
+        # remove_user_from_users(username, channels, name)
+        # if not user_in_queue(username, channels, name):
+        #     broadcast(broadcast_msg, channels, name)
+        # else:
+        #     print(broadcast_msg, end='')
+        #     sys.stdout.flush()
+        quit_channel(username, channels, name)
 
     elif message.startswith("/list"): # also apply to q users
         for channel in channels.values():
@@ -197,6 +198,21 @@ def process_message(message: str, client_socket, channels: dict,
                 print(msg, end='')
                 sys.stdout.flush()
 
+    elif message.startswith("/switch"):
+        token = message.split()
+        channel_to_switch = token[1]
+        if channel_to_switch not in channels:
+            msg = f"[Server Message] Channel \"{channel_to_switch}\" does not exist.\n"
+            client_socket.sendall(msg.encode())
+        elif username in channels[channel_to_switch]["users"] or \
+            username in channels[channel_to_switch]["queue"]:
+            msg = f"[Server Message] Channel \"{channel_to_switch}\" already has user {username}.\n"
+            client_socket.sendall(msg.encode())
+        else:
+            quit_channel(username, channels, name)
+            join_channel(username, channels, channel_to_switch, client_socket)
+
+
 
     else:    
         broadcast_msg = f"[{username}] {message}"
@@ -212,6 +228,36 @@ def broadcast(message, channels, name):
     for user in channels[name]["users"]:
             sock = channels[name]["sockets"][user]
             sock.sendall(message.encode())
+
+def quit_channel(username: str, channels: dict, name: str):
+    broadcast_msg = f"[Server Message] {username} has left the channel.\n"
+    remove_user_from_users(username, channels, name)
+    if not user_in_queue(username, channels, name):
+        broadcast(broadcast_msg, channels, name)
+    else:
+        print(broadcast_msg, end='')
+        sys.stdout.flush()
+
+def join_channel(username: str, channels: dict, name: str, client_socket):
+    if username in channels[name]["users"] or \
+        username in channels[name]["queue"]:
+            msg = f"[Server Message] Channel \"{name}\" already "\
+            f"has user {username}."
+            client_socket.sendall(msg.encode())
+            return
+
+    if not capacity_reached(channels, name):
+        add_user_to_users(username, channels, name, client_socket)
+        message = f"[Server Message] You have joined the channel \"{name}\".\n"
+        print(f"[Server Message] {username} has joined the channel \"{name}\".")
+        sys.stdout.flush()
+    else:
+        add_user_to_queue(username, channels, name, client_socket)
+        users_in_front = len(channels[name]["queue"]) - 1
+        message = f"[Server Message] You are in the waiting queue "\
+                    f"and there are {users_in_front} user(s) ahead of you.\n"
+    
+    client_socket.sendall(message.encode())
 
 def user_in_queue(username: str, channels: dict, name: str) -> bool:
     return username in channels[name]["queue"]
@@ -246,4 +292,5 @@ def remove_user_from_queue(username: str, channels: dict, name: str):
         channels[name]["queue"].remove(username)
     if username in channels[name]["q_sockets"]:
         channels[name]["q_sockets"].pop(username)  
+
 
