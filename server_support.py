@@ -221,12 +221,9 @@ def broadcast(message, channels, name):
 
 def quit_channel(username: str, channels: dict, name: str):
     broadcast_msg = f"[Server Message] {username} has left the channel.\n"
+    broadcast(broadcast_msg, channels, name)
+    sys.stdout.flush()
     remove_user_from_users(username, channels, name)
-    if not user_in_queue(username, channels, name):
-        broadcast(broadcast_msg, channels, name)
-    else:
-        print(broadcast_msg, end='')
-        sys.stdout.flush()
 
 def join_channel(username: str, channels: dict, name: str, client_socket):
     if username in channels[name]["users"] or \
@@ -270,6 +267,7 @@ def remove_user_from_users(username: str, channels: dict, name: str):
         print(f"[Server Message] {userToAdd} has joined the channel \"{name}\".")
         sys.stdout.flush()
         socketToAdd.sendall(message.encode())
+        sys.stdout.flush()
 
 def add_user_to_users(username: str, channels: dict, name: str, client_sock):
     channels[name]["users"].append(username)
