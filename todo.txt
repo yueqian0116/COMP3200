@@ -1,6 +1,0 @@
-TODO:
-
-Chatserver:
-1. Implement Queue system in process connections DONE
-2. Implement AFK check for each client *NOT DONE YET, will implement last*
-3. Implement kick user

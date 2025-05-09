@@ -291,6 +291,8 @@ def check_for_trailing_spaces(line):
             print("Usage: /mute channel_name client_username duration")
         elif line.startswith("/empty"):
             print("Usage: /empty channel_name")
+        elif line.startswith("/shutdown"):
+            print("Usage: /shutdown")
 
         sys.stdout.flush()
         return True  # Tell caller to skip further processing

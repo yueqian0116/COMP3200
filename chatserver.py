@@ -153,6 +153,10 @@ def handle_stdin(channels):
                         remove_user_from_users(user, channels, channel)
                     print(f"[Server Message] \"{channel}\" has been emptied.")
                     sys.stdout.flush()
+            elif cmd == "/shutdown":
+                if len(tokens) != 1:
+                    print("Usage: /shutdown")
+                    sys.stdout.flush()
 
 
         except Exception as e:
